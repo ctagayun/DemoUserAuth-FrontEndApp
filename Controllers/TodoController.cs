@@ -15,10 +15,12 @@ namespace TodoApi.Controllers
     [ApiController]
     public class TodoController : Controller
     {
-        private static readonly HttpClient _client = new HttpClient();
-        private static readonly string _remoteUrl = "https://DemoUserAuth-BackEndApp.azurewebsites.net";
         private readonly TodoContext _context;
 
+        //added 5/04//22
+        private static readonly HttpClient _client = new HttpClient();
+        private static readonly string _remoteUrl = "https://DemoUserAuth-BackEndApp.azurewebsites.net";
+       
         public TodoController(TodoContext context)
         {
             _context = context;
@@ -34,7 +36,7 @@ namespace TodoApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TodoItem>>> GetTodoItem()
         {
-            //The first line makes a GET /api/Todo call to the back-end API app
+            //chito - The first line makes a GET /api/Todo call to the back-end API app.
             var data = await _client.GetStringAsync($"{_remoteUrl}/api/Todo");
             return JsonConvert.DeserializeObject<List<TodoItem>>(data);
         }
@@ -52,6 +54,7 @@ namespace TodoApi.Controllers
 
             //return todoItem;
 
+            //chito - the first line makes a GET /api/Todo/{id} call to the back-end API app.
             var data = await _client.GetStringAsync($"{_remoteUrl}/api/Todo/{id}");
             return Content(data, "application/json");
         }
@@ -62,9 +65,34 @@ namespace TodoApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTodoItem(long id, TodoItem todoItem)
         {
-            //The first line makes a PUT /api/Todo/{id} call to the back-end API app.
+            //chito - The first line makes a PUT /api/Todo/{id} call to the back-end API app
             var res = await _client.PutAsJsonAsync($"{_remoteUrl}/api/Todo/{id}", todoItem);
             return new NoContentResult();
+
+            //if (id != todoItem.Id)
+            //{
+            //    return BadRequest();
+            //}
+
+            //_context.Entry(todoItem).State = EntityState.Modified;
+
+            //try
+            //{
+            //    await _context.SaveChangesAsync();
+            //}
+            //catch (DbUpdateConcurrencyException)
+            //{
+            //    if (!TodoItemExists(id))
+            //    {
+            //        return NotFound();
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
+
+            //return NoContent();
         }
 
         // POST: api/Todo
@@ -73,7 +101,12 @@ namespace TodoApi.Controllers
         [HttpPost]
         public async Task<ActionResult<TodoItem>> PostTodoItem(TodoItem todoItem)
         {
-            //The first line makes a POST /api/Todo call to the back-end API app
+            //_context.TodoItems.Add(todoItem);
+            //await _context.SaveChangesAsync();
+
+            //return CreatedAtAction("GetTodoItem", new { id = todoItem.Id }, todoItem);
+
+            //chito - The first line makes a POST /api/Todo call to the back-end API app. 
             var response = await _client.PostAsJsonAsync($"{_remoteUrl}/api/Todo", todoItem);
             var data = await response.Content.ReadAsStringAsync();
             return Content(data, "application/json");
@@ -83,14 +116,42 @@ namespace TodoApi.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<TodoItem>> DeleteTodoItem(long id)
         {
-            //The first line makes a DELETE /api/Todo/{id} call to the back-end API app.
+            //chito - The first line makes a DELETE /api/Todo/{id} call to the back-end API app.
             var res = await _client.DeleteAsync($"{_remoteUrl}/api/Todo/{id}");
             return new NoContentResult();
+
+            //var todoItem = await _context.TodoItems.FindAsync(id);
+            //if (todoItem == null)
+            //{
+            //    return NotFound();
+            //}
+
+            //_context.TodoItems.Remove(todoItem);
+            //await _context.SaveChangesAsync();
+
+            //return todoItem;
         }
 
         private bool TodoItemExists(long id)
         {
             return _context.TodoItems.Any(e => e.Id == id);
+        }
+
+        /// <summary>
+        /// Added Chito
+        /// This code adds the standard HTTP header Authorization: Bearer <access-token>
+        /// to all remote API calls. In the ASP.NET Core MVC request execution pipeline,
+        /// OnActionExecuting executes just before the respective action does,
+        /// so each of your outgoing API call now presents the access token.
+        /// </summary>
+        /// <param name="context"></param>
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            base.OnActionExecuting(context);
+
+            _client.DefaultRequestHeaders.Accept.Clear();
+            _client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", Request.Headers["X-MS-TOKEN-AAD-ACCESS-TOKEN"]);
         }
     }
 }
