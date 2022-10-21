@@ -19,7 +19,7 @@ namespace TodoApi.Controllers
 
         //added 5/04//22
         private static readonly HttpClient _client = new HttpClient();
-        private static readonly string _remoteUrl = "https://DemoUserAuth-BackEndApp.azurewebsites.net";
+        private static readonly string _remoteUrl = "https://demouserauth-backendappv2.azurewebsites.net";
        
         public TodoController(TodoContext context)
         {
@@ -30,6 +30,14 @@ namespace TodoApi.Controllers
                 _context.TodoItems.Add(new TodoItem { Name = "Item1" });
                 _context.SaveChanges();
             }
+        }
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            base.OnActionExecuting(context);
+
+            _client.DefaultRequestHeaders.Accept.Clear();
+            _client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", Request.Headers["X-MS-TOKEN-AAD-ACCESS-TOKEN"]);
         }
 
         // GET: api/Todo
